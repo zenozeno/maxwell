@@ -8,9 +8,6 @@ import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
 public class NoOpBootstrapper extends AbstractBootstrapper {
-
-	static final Logger LOGGER = LoggerFactory.getLogger( NoOpBootstrapper.class );
-
 	public NoOpBootstrapper(MaxwellContext context) { super( context ); }
 
 	@Override
@@ -19,13 +16,7 @@ public class NoOpBootstrapper extends AbstractBootstrapper {
 	}
 
 	@Override
-	public void startBootstrap(RowMap startBootstrapRow, AbstractProducer producer, Replicator replicator) throws Exception {}
-
-	@Override
-	public void completeBootstrap(RowMap completeBootstrapRow, AbstractProducer producer, Replicator replicator) throws Exception {}
-
-	@Override
-	public void resume(AbstractProducer producer, Replicator replicator) throws Exception {}
+	public void resume(AbstractProducer producer, Replicator replicator) throws Exception { }
 
 	@Override
 	public boolean isRunning( ) {
