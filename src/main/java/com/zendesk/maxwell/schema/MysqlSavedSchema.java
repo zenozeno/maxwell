@@ -573,7 +573,7 @@ public class MysqlSavedSchema {
 			// Only consider binlog positions before the target position on the current server.
 			// Within those, sort for the latest binlog file, then the latest binlog position.
 			PreparedStatement s = connection.prepareStatement(
-				"SELECT id from `schemas` "
+				"SELECT id, binlog_position, base_schema_id from `schemas` "
 				+ "WHERE deleted = 0 "
 				+ "AND last_heartbeat_read <= ? AND ((binlog_file < ?) OR (binlog_file = ? and binlog_position <= ?)) AND server_id = ? "
 				+ "ORDER BY last_heartbeat_read DESC, binlog_file DESC, binlog_position DESC limit 1");
@@ -586,7 +586,13 @@ public class MysqlSavedSchema {
 
 			ResultSet rs = s.executeQuery();
 			if (rs.next()) {
-				return rs.getLong("id");
+				Long latestSchemaId = rs.getLong("id");
+				Long baseSchemaId = rs.getLong("base_schema_id");
+				if (baseSchemaId != 0 && targetBinlogPosition.getOffset() == rs.getLong("binlog_position")) {
+					LOGGER.info("The latest schema binlog position is same with Position table. In order to avoid reprocess twice, maxwell is pointing to previous schema id: " + baseSchemaId);
+					return baseSchemaId;
+				}
+				return latestSchemaId;
 			} else
 				return null;
 		}
