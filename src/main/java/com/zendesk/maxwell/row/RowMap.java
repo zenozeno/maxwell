@@ -14,7 +14,6 @@ import org.slf4j.LoggerFactory;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.Serializable;
-import java.security.NoSuchAlgorithmException;
 import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
@@ -185,17 +184,10 @@ public class RowMap implements Serializable {
 		if (pkColumns.isEmpty()) {
 			return database + table;
 		}
-		StringBuilder keys = new StringBuilder();
-		for (String pk : pkColumns) {
-			Object pkValue = null;
-			if (data.containsKey(pk))
-				pkValue = data.get(pk);
-			if (pkValue != null)
-				keys.append(pkValue.toString());
-		}
+		String keys = buildPartitionKey(pkColumns);
 		if (keys.length() == 0)
 			return "None";
-		return keys.toString();
+		return keys;
 	}
 
 	public String buildPartitionKey(List<String> partitionColumns) {
