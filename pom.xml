@@ -41,6 +41,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <kafka.latest.version>0.11.0.1</kafka.latest.version>
   </properties>
 
   <profiles>
@@ -85,7 +86,7 @@
       </dependencies>
     </profile>
     <profile>
-      <id>kafka-0.11.0.1</id>
+      <id>kafka-latest</id>
       <activation>
         <activeByDefault>true</activeByDefault>
       </activation>
@@ -93,7 +94,7 @@
         <dependency>
           <groupId>org.apache.kafka</groupId>
           <artifactId>kafka-clients</artifactId>
-          <version>0.11.0.1</version>
+          <version>${kafka.latest.version}</version>
         </dependency>
       </dependencies>
     </profile>
@@ -278,9 +279,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-gpg-plugin</artifactId>
         <version>1.5</version>
-        <configuration>
-           <skip>true</skip>
-        </configuration>
         <executions>
           <execution>
             <id>sign-artifacts</id>
@@ -406,6 +404,32 @@
             <configuration>
               <outputDirectory>${project.build.directory}/lib/kafka-clients</outputDirectory>
               <includeArtifactIds>kafka-clients</includeArtifactIds>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-resources-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>filter-dockerfile</id>
+            <phase>validate</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.basedir}/target</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${project.basedir}</directory>
+                  <filtering>true</filtering>
+                  <includes>
+                    <include>Dockerfile</include>
+                  </includes>
+                </resource>
+              </resources>
             </configuration>
           </execution>
         </executions>
