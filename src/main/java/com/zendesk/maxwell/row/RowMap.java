@@ -2,10 +2,12 @@ package com.zendesk.maxwell.row;
 
 import com.fasterxml.jackson.core.*;
 import com.zendesk.maxwell.errors.ProtectedAttributeNameException;
+import com.zendesk.maxwell.producer.DataOutput;
 import com.zendesk.maxwell.producer.EncryptionMode;
 import com.zendesk.maxwell.replication.BinlogPosition;
 import com.zendesk.maxwell.producer.MaxwellOutputConfig;
 import com.zendesk.maxwell.replication.Position;
+import org.apache.commons.lang3.StringUtils;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -214,8 +216,11 @@ public class RowMap implements Serializable {
 			LinkedHashMap<String, Object> data,
 			JsonGenerator g,
 			boolean includeNullField
-	) throws IOException, NoSuchAlgorithmException {
-		g.writeObjectFieldStart(jsonMapName);
+	) throws IOException {
+
+		if(StringUtils.isNotBlank(jsonMapName)) {
+			g.writeObjectFieldStart(jsonMapName);
+		}
 
 		for (String key : data.keySet()) {
 			Object value = data.get(key);
@@ -240,7 +245,9 @@ public class RowMap implements Serializable {
 			}
 		}
 
-		g.writeEndObject(); // end of 'jsonMapName: { }'
+		if(StringUtils.isNotBlank(jsonMapName)) {
+			g.writeEndObject(); // end of 'jsonMapName: { }'
+		}
 	}
 
 	public String toJSON() throws Exception {
@@ -249,8 +256,59 @@ public class RowMap implements Serializable {
 
 	public String toJSON(MaxwellOutputConfig outputConfig) throws Exception {
 		JsonGenerator g = resetJsonGenerator();
+		Boolean isDataOutputContent=DataOutput.CONTENT.equals(outputConfig.outputDataOnly);
 
 		g.writeStartObject(); // start of row {
+
+		if(DataOutput.FALSE.equals(outputConfig.outputDataOnly)) {
+			generateMetadata(g, outputConfig);
+		}
+
+		if ( !isDataOutputContent && outputConfig.excludeColumns.size() > 0 ) {
+			// NOTE: to avoid concurrent modification.
+			Set<String> keys = new HashSet<>();
+			keys.addAll(this.data.keySet());
+			keys.addAll(this.oldData.keySet());
+
+			for ( Pattern p : outputConfig.excludeColumns ) {
+				for ( String key : keys ) {
+					if ( p.matcher(key).matches() ) {
+						this.data.remove(key);
+						this.oldData.remove(key);
+					}
+				}
+			}
+		}
+
+
+		EncryptionContext encryptionContext = null;
+		if (outputConfig.encryptionEnabled()) {
+			encryptionContext = EncryptionContext.create(outputConfig.secretKey);
+		}
+
+		DataJsonGenerator dataWriter = outputConfig.encryptionMode == EncryptionMode.ENCRYPT_DATA
+			? encryptingJsonGeneratorThreadLocal.get()
+			: plaintextDataGeneratorThreadLocal.get();
+
+		JsonGenerator dataGenerator = dataWriter.begin();
+		writeMapToJSON(!isDataOutputContent?FieldNames.DATA : null, this.data, dataGenerator, outputConfig.includesNulls);
+		if( !this.oldData.isEmpty() ){
+			writeMapToJSON(!isDataOutputContent?FieldNames.OLD : null, this.oldData, dataGenerator, outputConfig.includesNulls);
+		}
+		dataWriter.end(encryptionContext);
+
+		g.writeEndObject(); // end of row
+		g.flush();
+
+		if(outputConfig.encryptionMode == EncryptionMode.ENCRYPT_ALL){
+			String plaintext = jsonFromStream();
+			encryptingJsonGeneratorThreadLocal.get().writeEncryptedObject(plaintext, encryptionContext);
+			g.flush();
+		}
+		return jsonFromStream();
+	}
+
+	private void generateMetadata(JsonGenerator g, MaxwellOutputConfig outputConfig) throws IOException {
 
 		g.writeStringField(FieldNames.DATABASE, this.database);
 		g.writeStringField(FieldNames.TABLE, this.table);
@@ -290,48 +348,6 @@ public class RowMap implements Serializable {
 			g.writeObjectField(entry.getKey(), entry.getValue());
 		}
 
-		if ( outputConfig.excludeColumns.size() > 0 ) {
-			// NOTE: to avoid concurrent modification.
-			Set<String> keys = new HashSet<>();
-			keys.addAll(this.data.keySet());
-			keys.addAll(this.oldData.keySet());
-
-			for ( Pattern p : outputConfig.excludeColumns ) {
-				for ( String key : keys ) {
-					if ( p.matcher(key).matches() ) {
-						this.data.remove(key);
-						this.oldData.remove(key);
-					}
-				}
-			}
-		}
-
-
-		EncryptionContext encryptionContext = null;
-		if (outputConfig.encryptionEnabled()) {
-			encryptionContext = EncryptionContext.create(outputConfig.secretKey);
-		}
-
-		DataJsonGenerator dataWriter = outputConfig.encryptionMode == EncryptionMode.ENCRYPT_DATA
-			? encryptingJsonGeneratorThreadLocal.get()
-			: plaintextDataGeneratorThreadLocal.get();
-
-		JsonGenerator dataGenerator = dataWriter.begin();
-		writeMapToJSON(FieldNames.DATA, this.data, dataGenerator, outputConfig.includesNulls);
-		if( !this.oldData.isEmpty() ){
-			writeMapToJSON(FieldNames.OLD, this.oldData, dataGenerator, outputConfig.includesNulls);
-		}
-		dataWriter.end(encryptionContext);
-
-		g.writeEndObject(); // end of row
-		g.flush();
-
-		if(outputConfig.encryptionMode == EncryptionMode.ENCRYPT_ALL){
-			String plaintext = jsonFromStream();
-			encryptingJsonGeneratorThreadLocal.get().writeEncryptedObject(plaintext, encryptionContext);
-			g.flush();
-		}
-		return jsonFromStream();
 	}
 
 	private String jsonFromStream() {
