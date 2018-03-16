@@ -10,4 +10,4 @@ RUN cd /workspace \
 
 WORKDIR /app
 
-CMD [ "/bin/bash", "-c", "bin/maxwell --user=$MYSQL_USERNAME --password=$MYSQL_PASSWORD --host=$MYSQL_HOST --producer=$PRODUCER $MAXWELL_OPTIONS" ]
+CMD [ "/bin/bash", "-c", "bin/maxwell $MAXWELL_OPTIONS" ]
