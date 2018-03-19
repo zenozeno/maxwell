@@ -1,5 +1,9 @@
 package com.zendesk.maxwell.producer;
 
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.Map;
+
 /**
  * Enum to indicate if the data parameter should be the unique parameter in the output
  *
@@ -7,7 +11,7 @@ package com.zendesk.maxwell.producer;
  *
  * data output = false
  *
- *   maxwell: {
+ *   {
  *	 	"database": "test",
  *	 	"table": "maxwell",
  *	 	"type": "insert",
@@ -19,37 +23,34 @@ package com.zendesk.maxwell.producer;
  *
  * data output = true
  *
- *   maxwell: {
+ *   {
  *	 	"data": { "id":1, "daemon": "Stanislaw Lem" }
  *	 }
  *
  * data output = content
  *
- *   maxwell: {
+ *   {
  *	 	"id":1,
  *	 	"daemon": "Stanislaw Lem"
  *	 }
  *
  */
 public enum DataOutput {
+	TRUE,
+	FALSE,
+	CONTENT;
 
-	TRUE("true"),
-	FALSE("false"),
-	CONTENT("content");
-
-	private final String value;
-
-	DataOutput(String value) {
-		this.value = value;
-	}
+	static Map<String, DataOutput> VALUES = Collections.unmodifiableMap(new HashMap<String , DataOutput>() {{
+		put(TRUE.toString(), TRUE);
+		put(FALSE.toString(), FALSE);
+		put(CONTENT.toString(), CONTENT);
+	}});
 
 	public static DataOutput forValue(final String value) {
-		for (DataOutput dataOutput : values()) {
-			if (dataOutput.value.equalsIgnoreCase(value)) {
-				return dataOutput;
-			}
+		if(!VALUES.containsKey(value)) {
+			throw new IllegalArgumentException("No matching constant for [" + value + "]");
 		}
-		throw new IllegalArgumentException("No matching constant for [" + value + "]");
+		return VALUES.get(value);
 	}
 
 }

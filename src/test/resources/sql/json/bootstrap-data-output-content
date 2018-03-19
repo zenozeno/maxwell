@@ -1,0 +1,6 @@
+truncate table maxwell.bootstrap;
+DROP TABLE IF EXISTS shard_1.table_output_content;
+CREATE TABLE IF NOT EXISTS shard_1.table_output_content(account_id int unsigned, text_field varchar(255));
+insert into table_output_content set account_id = 1, text_field='hello';
+
+-> { account_id: 1, text_field: "hello"}
