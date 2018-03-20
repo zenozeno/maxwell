@@ -3,6 +3,7 @@ package com.zendesk.maxwell.producer;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Objects;
 
 /**
  * Enum to indicate if the data parameter should be the unique parameter in the output
@@ -47,10 +48,11 @@ public enum DataOutput {
 	}});
 
 	public static DataOutput forValue(final String value) {
-		if(!VALUES.containsKey(value)) {
+		String val = Objects.nonNull(value)? value.toUpperCase():value;
+		if(!VALUES.containsKey(val)) {
 			throw new IllegalArgumentException("No matching constant for [" + value + "]");
 		}
-		return VALUES.get(value);
+		return VALUES.get(val);
 	}
 
 }
