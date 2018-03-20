@@ -1,5 +1,6 @@
 FROM maven:3.5-jdk-8
 ENV MAXWELL_VERSION=${project.version} KAFKA_VERSION=${kafka.latest.version}
+ENV DOCKERIZE_VERSION v0.3.0
 
 COPY . /workspace
 
@@ -13,6 +14,10 @@ RUN apt-get update \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/* /usr/share/doc/* /workspace/ \
     && echo "$MAXWELL_VERSION" > /REVISION
+
+RUN wget https://github.com/jwilder/dockerize/releases/download/$DOCKERIZE_VERSION/dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && \
+    tar -C /usr/local/bin -xvzf dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz && \
+    rm dockerize-linux-amd64-$DOCKERIZE_VERSION.tar.gz
 
 WORKDIR /app
 

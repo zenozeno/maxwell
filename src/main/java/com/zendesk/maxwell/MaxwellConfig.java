@@ -3,6 +3,7 @@ package com.zendesk.maxwell;
 import com.codahale.metrics.MetricRegistry;
 import com.codahale.metrics.health.HealthCheckRegistry;
 import com.github.shyiko.mysql.binlog.network.SSLMode;
+import com.zendesk.maxwell.producer.DataOutput;
 import com.zendesk.maxwell.producer.EncryptionMode;
 import com.zendesk.maxwell.monitoring.MaxwellDiagnosticContext;
 import com.zendesk.maxwell.producer.MaxwellOutputConfig;
@@ -202,6 +203,7 @@ public class MaxwellConfig extends AbstractConfig {
 
 		parser.accepts("__separator_4");
 
+		parser.accepts( "output_data_only", "produced records with data only; [true|false|content]. default: false" ).withOptionalArg();
 		parser.accepts( "output_binlog_position", "produced records include binlog position; [true|false]. default: false" ).withOptionalArg();
 		parser.accepts( "output_gtid_position", "produced records include gtid position; [true|false]. default: false" ).withOptionalArg();
 		parser.accepts( "output_commit_info", "produced records include commit and xid; [true|false]. default: true" ).withOptionalArg();
@@ -486,6 +488,7 @@ public class MaxwellConfig extends AbstractConfig {
 		this.ignoreProducerError = fetchBooleanOption("ignore_producer_error", options, properties, true);
 
 		this.outputConfig = new MaxwellOutputConfig();
+		outputConfig.outputDataOnly = DataOutput.forValue(fetchOption("output_data_only", options, properties, DataOutput.FALSE.toString()));
 		outputConfig.includesBinlogPosition = fetchBooleanOption("output_binlog_position", options, properties, false);
 		outputConfig.includesGtidPosition = fetchBooleanOption("output_gtid_position", options, properties, false);
 		outputConfig.includesCommitInfo = fetchBooleanOption("output_commit_info", options, properties, true);

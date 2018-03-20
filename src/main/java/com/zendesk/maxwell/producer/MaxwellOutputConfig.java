@@ -6,6 +6,8 @@ import java.util.regex.Pattern;
 
 
 public class MaxwellOutputConfig {
+
+	public DataOutput outputDataOnly;
 	public boolean includesBinlogPosition;
 	public boolean includesGtidPosition;
 	public boolean includesCommitInfo;
@@ -19,6 +21,7 @@ public class MaxwellOutputConfig {
 	public String secretKey;
 
 	public MaxwellOutputConfig() {
+		this.outputDataOnly = DataOutput.FALSE;
 		this.includesBinlogPosition = false;
 		this.includesGtidPosition = false;
 		this.includesCommitInfo = true;

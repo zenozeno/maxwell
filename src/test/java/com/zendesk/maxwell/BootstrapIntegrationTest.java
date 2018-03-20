@@ -1,5 +1,6 @@
 package com.zendesk.maxwell;
 
+import com.zendesk.maxwell.producer.DataOutput;
 import com.zendesk.maxwell.producer.EncryptionMode;
 import com.zendesk.maxwell.producer.MaxwellOutputConfig;
 import com.zendesk.maxwell.row.RowMap;
@@ -32,6 +33,13 @@ public class BootstrapIntegrationTest extends MaxwellTestWithIsolatedServer {
 	@Test
 	public void testNoPkTableBootstrap() throws Exception {
 		runJSON("json/bootstrap-no-pk");
+	}
+
+	@Test
+	public void testOutputContentBootstrap() throws Exception {
+		MaxwellOutputConfig outputConfig = new MaxwellOutputConfig();
+		outputConfig.outputDataOnly = DataOutput.CONTENT;
+		runJSON("json/bootstrap-data-output-content", outputConfig);
 	}
 
 	@Test
