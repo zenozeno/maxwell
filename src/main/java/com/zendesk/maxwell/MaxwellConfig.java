@@ -342,7 +342,15 @@ public class MaxwellConfig extends AbstractConfig {
 		this.producerAckTimeout = fetchLongOption("producer_ack_timeout", options, properties, 0L);
 		this.bootstrapperType   = fetchOption("bootstrapper", options, properties, "async");
 		this.clientID           = fetchOption("client_id", options, properties, "maxwell");
-		this.replicaServerID    = fetchLongOption("replica_server_id", options, properties, 6379L);
+
+		long defaultReplicaServerID = 6379;
+		/* if the user is giving us a client_id, we'll assume that they're using multiple
+		 * maxwells and setup a different default replica_server_id.  Should be close enough
+		 * for government work. */
+		if ( !"maxwell".equals(this.clientID) )
+			defaultReplicaServerID = Math.abs(this.clientID.hashCode());
+
+		this.replicaServerID    = fetchLongOption("replica_server_id", options, properties, defaultReplicaServerID);
 
 		this.kafkaTopic         	= fetchOption("kafka_topic", options, properties, "maxwell");
 		this.kafkaKeyFormat     	= fetchOption("kafka_key_format", options, properties, "hash");
