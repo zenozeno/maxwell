@@ -3,9 +3,7 @@ package com.zendesk.maxwell.schema.ddl;
 import com.zendesk.maxwell.MaxwellFilter;
 import com.zendesk.maxwell.schema.*;
 
-public class TableDrop extends SchemaChange {
-	public String database;
-	final String table;
+public class TableDrop extends TableChange {
 	final boolean ifExists;
 
 	public TableDrop(String database, String table, boolean ifExists) {
@@ -23,15 +21,6 @@ public class TableDrop extends SchemaChange {
 		}
 
 		return new ResolvedTableDrop(database, table);
-	}
-
-	@Override
-	public boolean isBlacklisted(MaxwellFilter filter) {
-		if ( filter == null ) {
-			return false;
-		} else {
-			return filter.isTableBlacklisted(this.database, this.table);
-		}
 	}
 
 }

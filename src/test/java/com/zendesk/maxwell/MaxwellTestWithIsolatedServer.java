@@ -102,4 +102,20 @@ public class MaxwellTestWithIsolatedServer extends TestWithNameLogging {
 		// skips this test if running an older MYSQL version
 		assumeTrue(server.getVersion().atLeast(minimum));
 	}
+
+	protected void createDBUser(String user, String password) throws SQLException {
+		createDBUser(user, password, new String[]{"*.*"});
+	}
+	protected void createDBUser(String user, String password, String[] permissions) throws SQLException {
+		server.getConnection().createStatement().executeUpdate("GRANT REPLICATION SLAVE on *.* to '" + user + "'@'127.0.0.1' IDENTIFIED BY '" + password + "'");
+		server.getConnection().createStatement().executeUpdate("GRANT REPLICATION CLIENT on *.* to '" + user + "'@'127.0.0.1' IDENTIFIED BY '" + password + "'");
+
+		for(String permission : permissions) {
+			server.getConnection().createStatement().executeUpdate("GRANT ALL on " + permission + " to '" + user + "'@'127.0.0.1'");
+		}
+	}
+
+	protected void createDatabase(String dbName) throws SQLException {
+		server.getConnection().createStatement().executeUpdate("CREATE DATABASE if not exists " + dbName);
+	}
 }

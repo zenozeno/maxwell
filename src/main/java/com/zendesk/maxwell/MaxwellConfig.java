@@ -39,7 +39,7 @@ public class MaxwellConfig extends AbstractConfig {
 
 	public String databaseName;
 
-	public String includeDatabases, excludeDatabases, includeTables, excludeTables, excludeColumns, blacklistDatabases, blacklistTables, includeColumnValues;
+	public String includeDatabases, excludeDatabases, includeTables, excludeTables, excludeColumns, blacklistDatabases, blacklistTables, whitelistDatabases, whitelistTables, includeColumnValues;
 
 	public ProducerFactory producerFactory; // producerFactory has precedence over producerType
 	public final Properties customProducerProperties;
@@ -457,6 +457,8 @@ public class MaxwellConfig extends AbstractConfig {
 		this.excludeTables       = fetchOption("exclude_tables", options, properties, null);
 		this.blacklistDatabases  = fetchOption("blacklist_dbs", options, properties, null);
 		this.blacklistTables     = fetchOption("blacklist_tables", options, properties, null);
+		this.whitelistDatabases  = fetchOption("whitelist_dbs", options, properties, null);
+		this.whitelistTables     = fetchOption("whitelist_tables", options, properties, null);
 		this.includeColumnValues = fetchOption("include_column_values", options, properties, null);
 
 		if ( options != null && options.has("init_position")) {
@@ -651,6 +653,8 @@ public class MaxwellConfig extends AbstractConfig {
 					excludeTables,
 					blacklistDatabases,
 					blacklistTables,
+					whitelistDatabases,
+					whitelistTables,
 					includeColumnValues
 			);
 		} catch (MaxwellInvalidFilterException e) {

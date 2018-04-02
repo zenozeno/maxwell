@@ -2,6 +2,7 @@ package com.zendesk.maxwell.schema.ddl;
 
 import java.util.HashSet;
 import java.util.List;
+import java.util.Objects;
 import java.util.Set;
 import java.util.regex.Pattern;
 
@@ -113,4 +114,7 @@ public abstract class SchemaChange {
 	}
 
 	public abstract boolean isBlacklisted(MaxwellFilter filter);
+
+	public abstract boolean isWhitelisted(MaxwellFilter filter);
+
 }
