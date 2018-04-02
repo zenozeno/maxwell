@@ -56,13 +56,13 @@ public class BootstrapIntegrationTest extends MaxwellTestWithIsolatedServer {
 	}
 
 	@Test
-	public void testBootstrapIsDatabaseWhitelisted() throws Exception {
+	public void testIgnoreDatabaseWhichIsNotWhitelisted() throws Exception {
+		String whitelistDB = "sample";
 		MaxwellFilter filter = new MaxwellFilter();
-		filter.whitelistDatabases("sample");
-		createDatabase("sample");
+		filter.whitelistDatabases(whitelistDB);
+		createDatabase(whitelistDB);
 		createDatabase("ignoreme");
 		createDBUser("test","test", new String[]{ "maxwell.*", "sample.*"});
-		//server.setConnection(server.getConnection("test", "test"));
 
 		MaxwellTestSupport.setMaxwellMysqlUser("test");
 		MaxwellTestSupport.setMaxwellMysqlPassword("test");
