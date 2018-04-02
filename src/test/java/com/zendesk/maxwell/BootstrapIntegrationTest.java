@@ -66,7 +66,12 @@ public class BootstrapIntegrationTest extends MaxwellTestWithIsolatedServer {
 
 		MaxwellTestSupport.setMaxwellMysqlUser("test");
 		MaxwellTestSupport.setMaxwellMysqlPassword("test");
+
 		runJSON("json/bootstrap-whitelist-database", filter);
+
+		//restore prev user
+		MaxwellTestSupport.setMaxwellMysqlUser("maxwell");
+		MaxwellTestSupport.setMaxwellMysqlPassword("maxwell");
 	}
 
 	@Test
