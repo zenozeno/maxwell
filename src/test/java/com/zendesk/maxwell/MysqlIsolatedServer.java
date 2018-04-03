@@ -28,6 +28,7 @@ public class MysqlIsolatedServer {
 	private Connection connection; private String baseDir;
 	private int port;
 	private int serverPid;
+	private String urlConn;
 
 	static final Logger LOGGER = LoggerFactory.getLogger(MysqlIsolatedServer.class);
 	public static final TypeReference<Map<String, Object>> MAP_STRING_OBJECT_REF = new TypeReference<Map<String, Object>>() {};
@@ -103,6 +104,7 @@ public class MysqlIsolatedServer {
 			Map<String, Object> output = mapper.readValue(json, MAP_STRING_OBJECT_REF);
 			this.port = (int) output.get("port");
 			this.serverPid = (int) output.get("server_pid");
+			this.urlConn = "jdbc:mysql://127.0.0.1:" + port + "/mysql?zeroDateTimeBehavior=convertToNull&useSSL=false";
 			outputFile = (String) output.get("output");
 		} catch ( Exception e ) {
 			LOGGER.error("got exception while parsing " + json, e);
@@ -144,11 +146,19 @@ public class MysqlIsolatedServer {
 	}
 
 	public Connection getNewConnection() throws SQLException {
-		return DriverManager.getConnection("jdbc:mysql://127.0.0.1:" + port + "/mysql?zeroDateTimeBehavior=convertToNull&useSSL=false", "root", "");
+		return DriverManager.getConnection(this.urlConn, "root", "");
+	}
+
+	public Connection getConnection(String user, String password) throws SQLException {
+		return DriverManager.getConnection(this.urlConn, user, password);
 	}
 
 	public Connection getConnection() {
 		return connection;
+	}
+
+	public void setConnection(Connection connection){
+		this.connection=connection;
 	}
 
 	public Connection getConnection(String defaultDB) throws SQLException {

@@ -17,6 +17,8 @@ public class MaxwellFilter {
 	private final ArrayList<Pattern> excludeTables = new ArrayList<>();
 	private final ArrayList<Pattern> blacklistDatabases = new ArrayList<>();
 	private final ArrayList<Pattern> blacklistTables = new ArrayList<>();
+	private final ArrayList<Pattern> whitelistDatabases = new ArrayList<>();
+	private final ArrayList<Pattern> whitelistTables = new ArrayList<>();
 	private final Map<String, String> includeColumnValues = new HashMap<>();
 
 	public MaxwellFilter() { }
@@ -28,9 +30,11 @@ public class MaxwellFilter {
 		String excludeTables,
 		String blacklistDatabases,
 		String blacklistTables,
+		String whitelistDatabases,
+		String whitelistTables,
 		String includeColumnValues
 	) throws MaxwellInvalidFilterException {
-		this(includeDatabases, excludeDatabases, includeTables, excludeTables, blacklistDatabases, blacklistTables);
+		this(includeDatabases, excludeDatabases, includeTables, excludeTables, blacklistDatabases, blacklistTables, whitelistDatabases, whitelistTables);
 
 		if (includeColumnValues != null && !"".equals(includeColumnValues)) {
 			for (String s : includeColumnValues.split(",")) {
@@ -46,7 +50,9 @@ public class MaxwellFilter {
 		String includeTables,
 		String excludeTables,
 		String blacklistDatabases,
-		String blacklistTables
+		String blacklistTables,
+		String whitelistDatabases,
+		String whitelistTables
 	) throws MaxwellInvalidFilterException {
 		if ( includeDatabases != null ) {
 			for ( String s : includeDatabases.split(",") )
@@ -77,6 +83,16 @@ public class MaxwellFilter {
 			for ( String s : blacklistTables.split(",") )
 				blacklistTable(s);
 		}
+
+		if ( whitelistDatabases != null ) {
+			for ( String s : whitelistDatabases.split(",") )
+				whitelistDatabases(s);
+		}
+
+		if ( whitelistTables != null ) {
+			for ( String s : whitelistTables.split(",") )
+				whitelistTable(s);
+		}
 	}
 
 	public void includeDatabase(String name) throws MaxwellInvalidFilterException {
@@ -101,6 +117,14 @@ public class MaxwellFilter {
 
 	public void blacklistTable(String name) throws MaxwellInvalidFilterException {
 		blacklistTables.add(compile(name));
+	}
+
+	public void whitelistDatabases(String name) throws MaxwellInvalidFilterException {
+		whitelistDatabases.add(compile(name));
+	}
+
+	public void whitelistTable(String name) throws MaxwellInvalidFilterException {
+		whitelistDatabases.add(compile(name));
 	}
 
 	public void includeColumnValue(String column, String value) throws MaxwellInvalidFilterException {
@@ -181,6 +205,15 @@ public class MaxwellFilter {
 
 	public boolean isDatabaseBlacklisted(String databaseName) {
 		return ! filterListsInclude(emptyList, blacklistDatabases, databaseName);
+	}
+
+	public boolean isDatabaseWhitelisted(String databaseName) {
+		return filterListsInclude(whitelistDatabases, emptyList, databaseName);
+	}
+
+	public boolean isTableWhitelisted(String databaseName, String tableName){
+		return isDatabaseWhitelisted(databaseName)
+			&& filterListsInclude(whitelistTables, emptyList, tableName);
 	}
 
 	public boolean isTableBlacklisted(String databaseName, String tableName) {

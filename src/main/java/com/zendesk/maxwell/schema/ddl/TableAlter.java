@@ -2,16 +2,13 @@ package com.zendesk.maxwell.schema.ddl;
 
 import java.util.*;
 
-import com.zendesk.maxwell.MaxwellFilter;
 import com.zendesk.maxwell.schema.Database;
 import com.zendesk.maxwell.schema.Schema;
 import com.zendesk.maxwell.schema.Table;
 import com.zendesk.maxwell.schema.columndef.StringColumnDef;
 import com.zendesk.maxwell.CaseSensitivity;
 
-public class TableAlter extends SchemaChange {
-	public String database;
-	public String table;
+public class TableAlter extends TableChange {
 	public ArrayList<ColumnMod> columnMods;
 	public String newTableName;
 	public String newDatabase;
@@ -71,12 +68,4 @@ public class TableAlter extends SchemaChange {
 		return new ResolvedTableAlter(this.database, this.table, oldTable, table);
 	}
 
-	@Override
-	public boolean isBlacklisted(MaxwellFilter filter) {
-		if ( filter == null ) {
-			return false;
-		} else {
-			return filter.isTableBlacklisted(this.database, this.table);
-		}
-	}
 }

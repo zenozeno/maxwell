@@ -1,12 +1,8 @@
 package com.zendesk.maxwell.schema.ddl;
 
-import com.zendesk.maxwell.MaxwellFilter;
-import com.zendesk.maxwell.schema.Database;
 import com.zendesk.maxwell.schema.Schema;
-import com.zendesk.maxwell.schema.ddl.ResolvedDatabaseDrop;
 
-public class DatabaseDrop extends SchemaChange {
-	public String database;
+public class DatabaseDrop extends DatabaseChange {
 	public boolean ifExists;
 
 	public DatabaseDrop(String database, boolean ifExists) {
@@ -20,15 +16,6 @@ public class DatabaseDrop extends SchemaChange {
 			return null;
 
 		return new ResolvedDatabaseDrop(this.database);
-	}
-
-	@Override
-	public boolean isBlacklisted(MaxwellFilter filter) {
-		if ( filter == null ) {
-			return false;
-		} else {
-			return filter.isDatabaseBlacklisted(database);
-		}
 	}
 
 }

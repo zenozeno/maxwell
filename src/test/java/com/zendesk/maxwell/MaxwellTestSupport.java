@@ -20,6 +20,7 @@ import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Objects;
 
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
@@ -29,6 +30,9 @@ import static org.junit.Assert.assertThat;
 
 public class MaxwellTestSupport {
 	static final Logger LOGGER = LoggerFactory.getLogger(MaxwellTestSupport.class);
+
+	private static String maxwellMysqlUser;
+	private static String maxwellMysqlPassword;
 
 	public static MysqlIsolatedServer setupServer(String extraParams) throws Exception {
 		MysqlIsolatedServer server = new MysqlIsolatedServer();
@@ -127,6 +131,7 @@ public class MaxwellTestSupport {
 		MaxwellTestSupportCallback callback = new MaxwellTestSupportCallback() {
 			@Override
 			public void afterReplicatorStart(MysqlIsolatedServer mysql) throws SQLException {
+
 				 mysql.executeList(Arrays.asList(queries));
 			}
 
@@ -155,8 +160,8 @@ public class MaxwellTestSupport {
 
 		MaxwellConfig config = new MaxwellConfig();
 
-		config.maxwellMysql.user = "maxwell";
-		config.maxwellMysql.password = "maxwell";
+		config.maxwellMysql.user = Objects.nonNull(maxwellMysqlUser) ? maxwellMysqlUser : "maxwell";
+		config.maxwellMysql.password = Objects.nonNull(maxwellMysqlPassword) ? maxwellMysqlPassword : "maxwell";
 		config.maxwellMysql.host = "localhost";
 		config.maxwellMysql.port = mysql.getPort();
 		config.maxwellMysql.sslMode = SSLMode.DISABLED;
@@ -285,5 +290,13 @@ public class MaxwellTestSupport {
 
 		List<String> diff = topSchema.diff(bottomSchema, "followed schema", "recaptured schema");
 		assertThat(StringUtils.join(diff.iterator(), "\n"), diff.size(), is(0));
+	}
+
+	public static void setMaxwellMysqlUser(String user){
+		maxwellMysqlUser = user;
+	}
+
+	public static void setMaxwellMysqlPassword(String password){
+		maxwellMysqlPassword = password;
 	}
 }

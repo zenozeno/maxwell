@@ -10,9 +10,7 @@ import com.zendesk.maxwell.schema.Table;
 import com.zendesk.maxwell.schema.columndef.ColumnDef;
 import com.zendesk.maxwell.schema.columndef.StringColumnDef;
 
-public class TableCreate extends SchemaChange {
-	public String database;
-	public String table;
+public class TableCreate extends TableChange {
 	public List<ColumnDef> columns;
 	public List<String> pks;
 	public String charset;
@@ -69,15 +67,6 @@ public class TableCreate extends SchemaChange {
 			resolved.charset = dbCharset;
 
 		resolved.setDefaultColumnCharsets();
-	}
-
-	@Override
-	public boolean isBlacklisted(MaxwellFilter filter) {
-		if ( filter == null ) {
-			return false;
-		} else {
-			return filter.isTableBlacklisted(this.database, this.table);
-		}
 	}
 
 }

@@ -4,6 +4,7 @@ import com.zendesk.maxwell.producer.DataOutput;
 import com.zendesk.maxwell.producer.EncryptionMode;
 import com.zendesk.maxwell.producer.MaxwellOutputConfig;
 import com.zendesk.maxwell.row.RowMap;
+import org.apache.kafka.common.metrics.stats.Max;
 import org.junit.Test;
 
 import java.sql.Timestamp;
@@ -52,6 +53,25 @@ public class BootstrapIntegrationTest extends MaxwellTestWithIsolatedServer {
 		MaxwellFilter filter = new MaxwellFilter();
 		filter.includeDatabase("shard_1");
 		runJSON("json/bootstrap-whitelist", filter);
+	}
+
+	@Test
+	public void testIgnoreDatabaseWhichIsNotWhitelisted() throws Exception {
+		String whitelistDB = "sample";
+		MaxwellFilter filter = new MaxwellFilter();
+		filter.whitelistDatabases(whitelistDB);
+		createDatabase(whitelistDB);
+		createDatabase("ignoreme");
+		createDBUser("test","test", new String[]{ "maxwell.*", "sample.*"});
+
+		MaxwellTestSupport.setMaxwellMysqlUser("test");
+		MaxwellTestSupport.setMaxwellMysqlPassword("test");
+
+		runJSON("json/bootstrap-whitelist-database", filter);
+
+		//restore prev user
+		MaxwellTestSupport.setMaxwellMysqlUser("maxwell");
+		MaxwellTestSupport.setMaxwellMysqlPassword("maxwell");
 	}
 
 	@Test
@@ -239,4 +259,5 @@ public class BootstrapIntegrationTest extends MaxwellTestWithIsolatedServer {
 			}
 		}
 	}
+
 }

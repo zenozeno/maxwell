@@ -54,7 +54,7 @@ public abstract class AbstractSchemaStore {
 		ArrayList<ResolvedSchemaChange> resolvedSchemaChanges = new ArrayList<>();
 
 		for ( SchemaChange change : changes ) {
-			if ( !change.isBlacklisted(this.filter) ) {
+			if ( !change.isBlacklisted(this.filter) && change.isWhitelisted(this.filter) ) {
 				ResolvedSchemaChange resolved = change.resolve(schema);
 				if ( resolved != null ) {
 					resolved.apply(schema);
