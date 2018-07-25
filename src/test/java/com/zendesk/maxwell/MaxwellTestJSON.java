@@ -1,53 +1,57 @@
 package com.zendesk.maxwell;
 
-import java.util.*;
-import java.io.*;
-import java.util.function.Consumer;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
 
-import com.zendesk.maxwell.filtering.Filter;
-import com.zendesk.maxwell.producer.MaxwellOutputConfig;
-import com.zendesk.maxwell.row.RowEncrypt;
-import com.zendesk.maxwell.row.RowMap;
-import org.apache.commons.lang3.StringUtils;
+import java.io.BufferedReader;
+import java.io.File;
+import java.io.FileReader;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+import java.util.Optional;
+import java.util.function.Consumer;
 
+import org.apache.commons.lang3.StringUtils;
 import com.fasterxml.jackson.core.JsonParser;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
-
+import com.zendesk.maxwell.producer.MaxwellOutputConfig;
+import com.zendesk.maxwell.row.RowEncrypt;
+import com.zendesk.maxwell.row.RowMap;
 
 public class MaxwellTestJSON {
 	/* methods around running JSON test files */
-	public static final TypeReference<Map<String, Object>> MAP_STRING_OBJECT_REF = new TypeReference<Map<String, Object>>() {};
+	public static final TypeReference<Map<String, Object>> MAP_STRING_OBJECT_REF = new TypeReference<Map<String, Object>>() {
+	};
+	static final String JSON_PATTERN = "^\\s*\\->\\s*\\{.*";
 
-	public static Map<String, Object> parseJSON(String json) throws Exception {
-		ObjectMapper mapper = new ObjectMapper();
+	public static Map<String, Object> parseJSON(final String json) throws Exception {
+		final ObjectMapper mapper = new ObjectMapper();
 		mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
 		return mapper.readValue(json, MAP_STRING_OBJECT_REF);
 	}
 
-	public static Map<String, Object> parseEncryptedJSON(Map<String,Object> json, String secretKey) throws Exception {
-		Map<String, String> encrypted = (Map)json.get("encrypted");
+	public static Map<String, Object> parseEncryptedJSON(final Map<String, Object> json, final String secretKey) throws Exception {
+		final Map<String, String> encrypted = (Map)json.get("encrypted");
 		if (encrypted == null) {
 			return null;
 		}
-		String init_vector = encrypted.get("iv");
-		String plaintext = RowEncrypt.decrypt(encrypted.get("bytes").toString(), secretKey, init_vector);
+		final String init_vector = encrypted.get("iv");
+		final String plaintext = RowEncrypt.decrypt(encrypted.get("bytes").toString(), secretKey, init_vector);
 		return parseJSON(plaintext);
 	}
 
-	public static void assertJSON(List<Map<String, Object>> jsonOutput, List<Map<String, Object>> jsonAsserts) {
-		ArrayList<Map<String, Object>> missing = new ArrayList<>();
+	public static void assertJSON(final List<Map<String, Object>> jsonOutput, final List<Map<String, Object>> jsonAsserts) {
+		final ArrayList<Map<String, Object>> missing = new ArrayList<>();
 
-		for ( Map m : jsonAsserts ) {
-			if ( !jsonOutput.contains(m) )
+		for (final Map m : jsonAsserts) {
+			if (!jsonOutput.contains(m))
 				missing.add(m);
 		}
 
-		if ( missing.size() > 0 ) {
-			String msg = "Did not find:\n" +
+		if (missing.size() > 0) {
+			final String msg = "Did not find:\n" +
 					StringUtils.join(missing.iterator(), "\n") +
 					"\n\n in:\n" +
 					StringUtils.join(jsonOutput.iterator(), "\n");
@@ -55,27 +59,27 @@ public class MaxwellTestJSON {
 		}
 	}
 
-	private static void runJSONTest(MysqlIsolatedServer server, List<String> sql, List<Map<String, Object>> expectedJSON,
-									Consumer<MaxwellConfig> configLambda) throws Exception {
-		List<Map<String, Object>> eventJSON = new ArrayList<>();
+	private static void runJSONTest(final MysqlIsolatedServer server, final List<String> sql, final List<Map<String, Object>> expectedJSON,
+			final Consumer<MaxwellConfig> configLambda, final Optional<MaxwellOutputConfig> config) throws Exception {
+		final List<Map<String, Object>> eventJSON = new ArrayList<>();
 
 		final MaxwellConfig captureConfig = new MaxwellConfig();
-		if ( configLambda != null )
+		if (configLambda != null)
 			configLambda.accept(captureConfig);
 
-		MaxwellOutputConfig outputConfig = captureConfig.outputConfig;
+		final MaxwellOutputConfig outputConfig = config.orElse(captureConfig.outputConfig);
 
-		List<RowMap> rows = MaxwellTestSupport.getRowsWithReplicator(server, sql.toArray(new String[sql.size()]), null, configLambda);
+		final List<RowMap> rows = MaxwellTestSupport.getRowsWithReplicator(server, sql.toArray(new String[sql.size()]), null, configLambda);
 
-		for ( RowMap r : rows ) {
-			String s;
-			if ( outputConfig == null ) {
+		for (final RowMap r : rows) {
+			final String s;
+			if (outputConfig == null) {
 				s = r.toJSON();
 			} else {
 				s = r.toJSON(outputConfig);
 			}
 
-			Map<String, Object> outputMap = parseJSON(s);
+			final Map<String, Object> outputMap = parseJSON(s);
 
 			outputMap.remove("ts");
 			outputMap.remove("xid");
@@ -88,39 +92,28 @@ public class MaxwellTestJSON {
 
 	}
 
-	public static class SQLAndJSON {
-		public ArrayList<Map<String, Object>> jsonAsserts;
-		public ArrayList<String> inputSQL;
-
-		protected SQLAndJSON() {
-			this.jsonAsserts = new ArrayList<>();
-			this.inputSQL = new ArrayList<>();
-		}
-	}
-
-	static final String JSON_PATTERN = "^\\s*\\->\\s*\\{.*";
-	public static SQLAndJSON parseJSONTestFile(String fname) throws Exception {
-		File file = new File(fname);
-		SQLAndJSON ret = new SQLAndJSON();
-		BufferedReader reader = new BufferedReader(new FileReader(file));
-		ObjectMapper mapper = new ObjectMapper();
+	public static SQLAndJSON parseJSONTestFile(final String fname) throws Exception {
+		final File file = new File(fname);
+		final SQLAndJSON ret = new SQLAndJSON();
+		final BufferedReader reader = new BufferedReader(new FileReader(file));
+		final ObjectMapper mapper = new ObjectMapper();
 
 		mapper.configure(JsonParser.Feature.ALLOW_UNQUOTED_FIELD_NAMES, true);
 
 		String buffer = null;
 		boolean bufferIsJSON = false;
-		while ( reader.ready() ) {
+		while (reader.ready()) {
 			String line = reader.readLine();
 
 			if (line.matches("^\\s*$")) { // skip blanks
 				continue;
 			}
 
-			if ( buffer != null ) {
+			if (buffer != null) {
 				if (line.matches("^\\s+.*$") && !line.matches(JSON_PATTERN)) { // leading whitespace -- continuation of previous line
 					buffer = buffer + " " + line.trim();
 				} else {
-					if ( bufferIsJSON )	{
+					if (bufferIsJSON) {
 						ret.jsonAsserts.add(mapper.<Map<String, Object>>readValue(buffer, MAP_STRING_OBJECT_REF));
 					} else {
 						ret.inputSQL.add(buffer);
@@ -129,8 +122,8 @@ public class MaxwellTestJSON {
 				}
 			}
 
-			if ( buffer == null ) {
-				if ( line.matches(JSON_PATTERN) ) {
+			if (buffer == null) {
+				if (line.matches(JSON_PATTERN)) {
 					line = line.replaceAll("^\\s*\\->\\s*", "");
 					bufferIsJSON = true;
 				} else {
@@ -140,8 +133,8 @@ public class MaxwellTestJSON {
 			}
 		}
 
-		if ( buffer != null ) {
-			if ( bufferIsJSON )	{
+		if (buffer != null) {
+			if (bufferIsJSON) {
 				ret.jsonAsserts.add(mapper.<Map<String, Object>>readValue(buffer, MAP_STRING_OBJECT_REF));
 			} else {
 				ret.inputSQL.add(buffer);
@@ -152,10 +145,29 @@ public class MaxwellTestJSON {
 		return ret;
 	}
 
-	protected static void runJSONTestFile(MysqlIsolatedServer server, String fname, Consumer<MaxwellConfig> configLambda) throws Exception {
-		String dir = MaxwellTestSupport.getSQLDir();
-		SQLAndJSON testResources = parseJSONTestFile(new File(dir, fname).toString());
+	protected static void runJSONTestFile(final MysqlIsolatedServer server, final String fname, final Consumer<MaxwellConfig> configLambda) throws Exception {
+		final String dir = MaxwellTestSupport.getSQLDir();
+		final SQLAndJSON testResources = parseJSONTestFile(new File(dir, fname).toString());
 
-		runJSONTest(server, testResources.inputSQL, testResources.jsonAsserts, configLambda);
+		runJSONTest(server, testResources.inputSQL, testResources.jsonAsserts, configLambda, Optional.empty());
+	}
+
+	protected static void runJSONTestFile(
+			final MysqlIsolatedServer server, final String fname, final Consumer<MaxwellConfig> configLambda, final MaxwellOutputConfig config)
+			throws Exception {
+		final String dir = MaxwellTestSupport.getSQLDir();
+		final SQLAndJSON testResources = parseJSONTestFile(new File(dir, fname).toString());
+
+		runJSONTest(server, testResources.inputSQL, testResources.jsonAsserts, configLambda, Optional.of(config));
+	}
+
+	public static class SQLAndJSON {
+		public ArrayList<Map<String, Object>> jsonAsserts;
+		public ArrayList<String> inputSQL;
+
+		protected SQLAndJSON() {
+			jsonAsserts = new ArrayList<>();
+			inputSQL = new ArrayList<>();
+		}
 	}
 }
