@@ -1,16 +1,15 @@
 package com.zendesk.maxwell.producer;
 
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
 import java.util.regex.Pattern;
 
-
 public class MaxwellOutputConfig {
-
 	public DataOutput outputDataOnly;
 	public boolean includesBinlogPosition;
 	public boolean includesGtidPosition;
 	public boolean includesCommitInfo;
+	public boolean includesXOffset;
 	public boolean includesNulls;
 	public boolean includesServerId;
 	public boolean includesThreadId;
@@ -21,18 +20,18 @@ public class MaxwellOutputConfig {
 	public String secretKey;
 
 	public MaxwellOutputConfig() {
-		this.outputDataOnly = DataOutput.FALSE;
-		this.includesBinlogPosition = false;
-		this.includesGtidPosition = false;
-		this.includesCommitInfo = true;
-		this.includesNulls = true;
-		this.includesServerId = false;
-		this.includesThreadId = false;
-		this.includesRowQuery = false;
-		this.outputDDL = false;
-		this.excludeColumns = new ArrayList<>();
-		this.encryptionMode = EncryptionMode.ENCRYPT_NONE;
-		this.secretKey = null;
+		outputDataOnly = DataOutput.FALSE;
+		includesBinlogPosition = false;
+		includesGtidPosition = false;
+		includesCommitInfo = true;
+		includesNulls = true;
+		includesServerId = false;
+		includesThreadId = false;
+		includesRowQuery = false;
+		outputDDL = false;
+		excludeColumns = new ArrayList<>();
+		encryptionMode = EncryptionMode.ENCRYPT_NONE;
+		secretKey = null;
 	}
 
 	public boolean encryptionEnabled() {

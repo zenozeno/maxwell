@@ -1,7 +1,0 @@
-CREATE TABLE IF NOT EXISTS sample.foo ( id int(11) auto_increment not null, something text, primary key (id) )
-CREATE TABLE IF NOT EXISTS ignoreme.foo ( id int(11) auto_increment not null, something text, primary key (id) )
-
-INSERT INTO sample.foo set something = 'something'
-INSERT INTO ignoreme.foo set something = 'nothing'
-
--> { database: "sample", table: "foo", type:"insert", data: { id: 1, something: "something" } }

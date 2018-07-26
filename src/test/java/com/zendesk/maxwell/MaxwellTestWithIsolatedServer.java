@@ -1,26 +1,29 @@
 package com.zendesk.maxwell;
 
+import static org.junit.Assume.assumeTrue;
+
 import java.sql.Connection;
 import java.sql.SQLException;
-import java.util.*;
+import java.util.List;
+import java.util.TimeZone;
+import java.util.function.Consumer;
 
+import org.junit.Before;
+import org.junit.BeforeClass;
+import com.zendesk.maxwell.filtering.Filter;
+import com.zendesk.maxwell.filtering.InvalidFilterException;
 import com.zendesk.maxwell.producer.MaxwellOutputConfig;
 import com.zendesk.maxwell.replication.MysqlVersion;
 import com.zendesk.maxwell.replication.Position;
 import com.zendesk.maxwell.row.RowMap;
-import org.junit.*;
-
-import static org.junit.Assume.assumeTrue;
-
+import com.zendesk.maxwell.util.Logging;
 
 public class MaxwellTestWithIsolatedServer extends TestWithNameLogging {
 	protected static MysqlIsolatedServer server;
-	static {
-		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
-	}
 
 	@BeforeClass
 	public static void setupTest() throws Exception {
+		Logging.setupLogBridging();
 		server = MaxwellTestSupport.setupServer();
 	}
 
@@ -29,93 +32,95 @@ public class MaxwellTestWithIsolatedServer extends TestWithNameLogging {
 		MaxwellTestSupport.setupSchema(server);
 	}
 
-	protected List<RowMap> getRowsForSQL(MaxwellFilter filter, String[] input) throws Exception {
-		return MaxwellTestSupport.getRowsWithReplicator(server, filter, input, null);
+	protected List<RowMap> getRowsForSQL(final Filter filter, final String[] input) throws Exception {
+		return getRowsForSQL(filter, input, null);
 	}
 
-	protected List<RowMap> getRowsForSQL(MaxwellFilter filter, String[] input, String[] before) throws Exception {
-		return MaxwellTestSupport.getRowsWithReplicator(server, filter, input, before);
+	protected List<RowMap> getRowsForSQL(final String[] input) throws Exception {
+		return getRowsForSQL(null, input, null);
 	}
 
-	protected List<RowMap> getRowsForSQL(String[] input) throws Exception {
-		return MaxwellTestSupport.getRowsWithReplicator(server, null, input, null);
+	protected List<RowMap> getRowsForSQL(final Filter filter, final String[] input, final String[] before) throws Exception {
+		return MaxwellTestSupport.getRowsWithReplicator(server, input, before, (config) -> {
+			if (filter != null) {
+				try {
+					filter.addRule("include: test.*");
+				} catch (final InvalidFilterException e) {
+				}
+			}
+
+			config.filter = filter;
+		});
 	}
 
 	protected List<RowMap> getRowsForSQLTransactional(final String[] input) throws Exception {
-		return getRowsForSQLTransactional(input, null, null);
+		final MaxwellTestSupportTXCallback cb = new MaxwellTestSupportTXCallback(input);
+		return MaxwellTestSupport.getRowsWithReplicator(server, cb, null);
 	}
 
-	protected List<RowMap> getRowsForSQLTransactional(final String[] input, MaxwellFilter filter, MaxwellOutputConfig outputConfig) throws Exception {
-		MaxwellTestSupportCallback callback = new MaxwellTestSupportCallback() {
-			@Override
-			public void afterReplicatorStart(MysqlIsolatedServer mysql) throws SQLException {
-				Connection c = mysql.getNewConnection();
-				c.setAutoCommit(false);
-				for (String s : input) {
-					c.createStatement().execute(s);
-				}
-				c.commit();
-			}
-		};
-		return MaxwellTestSupport.getRowsWithReplicator(server, filter, callback, outputConfig);
+	protected List<RowMap> getRowsForDDLTransaction(final String[] input, final Filter filter) throws Exception {
+		final MaxwellTestSupportTXCallback cb = new MaxwellTestSupportTXCallback(input);
+		return MaxwellTestSupport.getRowsWithReplicator(server, cb, (config) -> {
+			config.outputConfig = new MaxwellOutputConfig();
+			config.outputConfig.outputDDL = true;
+			config.filter = filter;
+		});
 	}
 
-	protected List<RowMap> getRowsForDDLTransaction(String[] sql, MaxwellFilter filter) throws Exception {
-		MaxwellOutputConfig outputConfig = new MaxwellOutputConfig();
-		outputConfig.outputDDL = true;
-		return getRowsForSQLTransactional(sql, filter, outputConfig);
+	protected void runJSON(final String filename) throws Exception {
+		MaxwellTestJSON.runJSONTestFile(server, filename, null);
 	}
 
-	protected void runJSON(String filename) throws Exception {
-		MaxwellTestJSON.runJSONTestFile(server, filename, null, null);
+	protected void runJSON(final String filename, final Consumer<MaxwellConfig> configLambda) throws Exception {
+		MaxwellTestJSON.runJSONTestFile(server, filename, configLambda);
 	}
 
-	protected void runJSON(String filename, MaxwellFilter filter) throws Exception {
-		MaxwellTestJSON.runJSONTestFile(server, filename, filter, null);
-	}
-
-	protected void runJSON(String filename, MaxwellOutputConfig outputConfig) throws Exception {
-		MaxwellTestJSON.runJSONTestFile(server, filename, null, outputConfig);
+	protected void runJSON(final String filename, final MaxwellOutputConfig config) throws Exception {
+		MaxwellTestJSON.runJSONTestFile(server, filename, null, config);
 	}
 
 	protected MaxwellContext buildContext() throws Exception {
 		return MaxwellTestSupport.buildContext(server.getPort(), null, null);
 	}
 
-	protected MaxwellContext buildContext(Position p) throws Exception {
+	protected MaxwellContext buildContext(final Position p) throws Exception {
 		return MaxwellTestSupport.buildContext(server.getPort(), p, null);
 	}
 
-	protected MaxwellFilter excludeTable(String name) throws MaxwellInvalidFilterException {
-		MaxwellFilter filter = new MaxwellFilter();
-		filter.excludeTable(name);
+	protected Filter excludeTable(final String name) throws InvalidFilterException {
+		final Filter filter = new Filter("exclude: *." + name);
 		return filter;
 	}
 
-	protected MaxwellFilter excludeDb(String name) throws MaxwellInvalidFilterException {
-		MaxwellFilter filter = new MaxwellFilter();
-		filter.excludeDatabase(name);
+	protected Filter excludeDb(final String name) throws InvalidFilterException {
+		final Filter filter = new Filter("exclude: " + name + ".*");
 		return filter;
 	}
 
-	protected void requireMinimumVersion(MysqlVersion minimum) {
+	protected void requireMinimumVersion(final MysqlVersion minimum) {
 		// skips this test if running an older MYSQL version
 		assumeTrue(server.getVersion().atLeast(minimum));
 	}
 
-	protected void createDBUser(String user, String password) throws SQLException {
-		createDBUser(user, password, new String[]{"*.*"});
-	}
-	protected void createDBUser(String user, String password, String[] permissions) throws SQLException {
-		server.getConnection().createStatement().executeUpdate("GRANT REPLICATION SLAVE on *.* to '" + user + "'@'127.0.0.1' IDENTIFIED BY '" + password + "'");
-		server.getConnection().createStatement().executeUpdate("GRANT REPLICATION CLIENT on *.* to '" + user + "'@'127.0.0.1' IDENTIFIED BY '" + password + "'");
+	private class MaxwellTestSupportTXCallback extends MaxwellTestSupportCallback {
+		private final String[] input;
 
-		for(String permission : permissions) {
-			server.getConnection().createStatement().executeUpdate("GRANT ALL on " + permission + " to '" + user + "'@'127.0.0.1'");
+		public MaxwellTestSupportTXCallback(final String[] input) {
+			this.input = input;
+		}
+
+		@Override
+		public void afterReplicatorStart(final MysqlIsolatedServer mysql) throws SQLException {
+			final Connection c = mysql.getNewConnection();
+			c.setAutoCommit(false);
+			for (final String s : input) {
+				c.createStatement().execute(s);
+			}
+			c.commit();
 		}
 	}
 
-	protected void createDatabase(String dbName) throws SQLException {
-		server.getConnection().createStatement().executeUpdate("CREATE DATABASE if not exists " + dbName);
+	static {
+		TimeZone.setDefault(TimeZone.getTimeZone("UTC"));
 	}
 }

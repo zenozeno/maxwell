@@ -1,8 +1,10 @@
 package com.zendesk.maxwell.schema.ddl;
 
+import com.zendesk.maxwell.filtering.Filter;
 import com.zendesk.maxwell.schema.*;
 
-public class DatabaseCreate extends DatabaseChange {
+public class DatabaseCreate extends SchemaChange {
+	public final String database;
 	private final boolean ifNotExists;
 	public final String charset;
 
@@ -24,6 +26,15 @@ public class DatabaseCreate extends DatabaseChange {
 			chset = this.charset;
 
 		return new ResolvedDatabaseCreate(database, chset);
+	}
+
+	@Override
+	public boolean isBlacklisted(Filter filter) {
+		if ( filter == null ) {
+			return false;
+		} else {
+			return filter.isDatabaseBlacklisted(database);
+		}
 	}
 
 }
