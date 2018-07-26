@@ -4,7 +4,7 @@
 
     <groupId>com.zendesk</groupId>
     <artifactId>maxwell</artifactId>
-    <version>1.17.1</version>
+    <version>1.17.1-SNAPSHOT</version>
     <packaging>jar</packaging>
 
     <name>maxwell</name>
@@ -411,6 +411,32 @@
                         <configuration>
                             <outputDirectory>${project.build.directory}/lib/kafka-clients</outputDirectory>
                             <includeArtifactIds>kafka-clients</includeArtifactIds>
+                        </configuration>
+                    </execution>
+                </executions>
+            </plugin>
+
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-resources-plugin</artifactId>
+                <executions>
+                    <execution>
+                        <id>filter-dockerfile</id>
+                        <phase>validate</phase>
+                        <goals>
+                            <goal>copy-resources</goal>
+                        </goals>
+                        <configuration>
+                            <outputDirectory>${project.basedir}/target</outputDirectory>
+                            <resources>
+                                <resource>
+                                    <directory>${project.basedir}</directory>
+                                    <filtering>true</filtering>
+                                    <includes>
+                                        <include>Dockerfile</include>
+                                    </includes>
+                                </resource>
+                            </resources>
                         </configuration>
                     </execution>
                 </executions>
